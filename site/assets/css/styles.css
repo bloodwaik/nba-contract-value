@@ -381,3 +381,173 @@ footer {
   line-height: 1.55;
 }
 .spotlight .story strong, .card .story strong { color: var(--text); font-style: normal; }
+
+/* ---------- Mobile (≤720px) ---------- */
+@media (max-width: 720px) {
+  .container { padding: 0 14px; }
+
+  /* Nav: hide brand wordmark, scrollable pill row */
+  .nav-inner { padding: 10px 12px; gap: 8px; }
+  .nav-brand span:not(.logo) {
+    font-size: 14px; max-width: 100px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .nav-links {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: -4px -8px -4px 0;
+    padding: 4px 8px 4px 0;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
+  .nav-link { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+
+  /* Hero: tighter padding, smaller type */
+  .hero { padding: 36px 0 20px; }
+  .hero h1 { font-size: 28px; line-height: 1.12; }
+  .hero p.lead { font-size: 15px; }
+  .eyebrow { font-size: 11px; padding: 5px 8px; margin-bottom: 12px; }
+
+  /* Cards & numbers */
+  .card { padding: 16px; border-radius: 13px; }
+  .card .num { font-size: 24px; }
+  .grid { gap: 12px; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }  /* 2x2 instead of 1x4 stack */
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  /* Section heads */
+  .section-head { margin: 36px 0 12px; }
+  .section-head h2 { font-size: 22px; }
+  .section-head .sub { font-size: 12px; }
+
+  /* Spotlight cards */
+  .spotlight { gap: 12px; grid-template-columns: 1fr; }
+  .spotlight .card { padding: 18px; }
+  .spotlight .name { font-size: 19px; }
+  .spotlight .delta { font-size: 24px; margin-top: 10px; }
+  .spotlight .meta { font-size: 12px; }
+
+  /* Story sentences a bit tighter */
+  .spotlight .story, .card .story { font-size: 12px; padding-top: 8px; margin-top: 10px; }
+
+  /* Filters bar */
+  .filters { padding: 12px; gap: 8px; }
+  .filters .filter { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .filters select, .filters input { padding: 7px 9px; font-size: 13px; }
+  .filters label { font-size: 10px; }
+  .filters button { width: 100%; flex: 1 1 100%; }
+
+  /* Tables: horizontal scroll wrapper, smaller padding */
+  .dataTables_wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table.dt { font-size: 12px; }
+  table.dt thead th, table.dt tbody td { padding: 8px 6px; }
+  td.player { font-weight: 600; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Hide low-priority columns on mobile rankings tables.
+     Keeps: Rank, Player, BPM, Salary, Surplus %, $Δ.
+     Drops: Team, Pos, Age, Min, Paid %, Earned $, Earned %. */
+  #rankings-table thead th:nth-child(3),
+  #rankings-table tbody td:nth-child(3),
+  #rankings-table thead th:nth-child(4),
+  #rankings-table tbody td:nth-child(4),
+  #rankings-table thead th:nth-child(5),
+  #rankings-table tbody td:nth-child(5),
+  #rankings-table thead th:nth-child(7),
+  #rankings-table tbody td:nth-child(7),
+  #rankings-table thead th:nth-child(9),
+  #rankings-table tbody td:nth-child(9),
+  #rankings-table thead th:nth-child(10),
+  #rankings-table tbody td:nth-child(10),
+  #rankings-table thead th:nth-child(11),
+  #rankings-table tbody td:nth-child(11) {
+    display: none;
+  }
+
+  /* Daily table: keep Rank, Player, Team, Min, Pts, GmSc, $Δ.
+     Drop: vs, Ast, Reb, Stl, Blk, +/-, Paid/game, Earned. */
+  #daily-table thead th:nth-child(4),
+  #daily-table tbody td:nth-child(4),
+  #daily-table thead th:nth-child(7),
+  #daily-table tbody td:nth-child(7),
+  #daily-table thead th:nth-child(8),
+  #daily-table tbody td:nth-child(8),
+  #daily-table thead th:nth-child(9),
+  #daily-table tbody td:nth-child(9),
+  #daily-table thead th:nth-child(10),
+  #daily-table tbody td:nth-child(10),
+  #daily-table thead th:nth-child(11),
+  #daily-table tbody td:nth-child(11),
+  #daily-table thead th:nth-child(13),
+  #daily-table tbody td:nth-child(13),
+  #daily-table thead th:nth-child(14),
+  #daily-table tbody td:nth-child(14) {
+    display: none;
+  }
+
+  /* DataTables search/length controls: stack and full-width */
+  .dataTables_wrapper .top {
+    display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .dataTables_filter, .dataTables_length { float: none !important; text-align: left; }
+  .dataTables_filter label, .dataTables_length label {
+    display: flex; align-items: center; gap: 8px; font-size: 11px;
+  }
+  .dataTables_filter input, .dataTables_length select {
+    flex: 1; max-width: 100%; padding: 8px 10px !important;
+  }
+  .dataTables_paginate .paginate_button { padding: 4px 8px !important; }
+  .dataTables_info { font-size: 12px !important; }
+
+  /* Algorithm-page steps */
+  .step { grid-template-columns: 40px 1fr; gap: 12px; padding: 16px; }
+  .step-num { width: 36px; height: 36px; font-size: 15px; }
+  .step h3 { font-size: 16px; }
+  .step p { font-size: 14px; }
+  .step .formula { font-size: 12px; padding: 5px 10px; }
+
+  /* Callout */
+  .callout { flex-direction: row; padding: 14px 16px; gap: 12px; }
+  .callout .badge { width: 32px; height: 32px; font-size: 14px; flex-shrink: 0; }
+  .callout p { font-size: 14px; line-height: 1.55; }
+
+  /* Daily calendar */
+  .calendar-layout { grid-template-columns: 1fr; gap: 14px; }
+  .calendar-card { padding: 14px; }
+  .flatpickr-calendar.inline { max-width: 100% !important; }
+  .flatpickr-calendar.inline .flatpickr-day { max-width: 14.28% !important; height: 36px; line-height: 34px; font-size: 12px; }
+
+  /* Recent strip — single row, horizontal scroll */
+  .recent-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -14px; padding: 0 14px;
+  }
+  .recent-strip::-webkit-scrollbar { display: none; }
+  .recent-pill { flex-shrink: 0; min-width: 100px; padding: 8px 12px; }
+
+  /* Game grid */
+  .game-grid { grid-template-columns: 1fr; gap: 10px; }
+  .game-pill { padding: 10px 12px; font-size: 13px; }
+
+  /* Tooltips: keep inside viewport */
+  .has-tip::after { max-width: 180px; font-size: 11px; padding: 6px 10px; }
+
+  /* Footer */
+  footer { padding: 24px 0 40px; margin-top: 50px; }
+  footer .tiny { font-size: 11px; }
+}
+
+/* Extra-small phones (≤380px) */
+@media (max-width: 380px) {
+  .grid-4 { grid-template-columns: 1fr; }   /* fall back to single column */
+  .hero h1 { font-size: 26px; }
+  .card .num { font-size: 22px; }
+}
