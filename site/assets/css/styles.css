@@ -386,6 +386,71 @@ footer {
 }
 .spotlight .story strong, .card .story strong { color: var(--text); font-style: normal; }
 
+/* ---------- Mobile rankings card view ---------- */
+/* Desktop: hide cards, table is visible (default). Mobile rule below flips it. */
+.rankings-cards { display: none; }
+
+.mrank-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 14px 12px;
+  margin-bottom: 10px;
+}
+.mrank-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.mrank-name { min-width: 0; }
+.mrank-player {
+  font-weight: 700; font-size: 15px; letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mrank-meta {
+  color: var(--text-faint); font-size: 11px;
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mrank-delta { font-size: 13px; padding: 4px 10px; }
+.mrank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+.mrank-grid > div {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.mrank-grid > div:last-child {
+  grid-column: 1 / -1;   /* surplus row spans both columns */
+  flex-direction: row; justify-content: space-between; align-items: center;
+}
+.mrank-k {
+  font-size: 10px; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.mrank-v { font-size: 13px; font-weight: 500; }
+.mrank-v .dim { color: var(--text-dim); font-size: 12px; font-weight: 400; }
+.mrank-more {
+  display: block; width: 100%;
+  margin-top: 6px; padding: 12px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-strong);
+  color: var(--text-dim);
+  border-radius: 12px;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer;
+}
+.mrank-more:hover, .mrank-more:active {
+  background: var(--bg-card-strong);
+  color: var(--text);
+}
+
 /* ---------- Mobile (≤720px) ---------- */
 @media (max-width: 720px) {
   .container { padding: 0 16px; }
@@ -457,8 +522,12 @@ footer {
   .filters label { font-size: 10px; }
   .filters button { width: 100%; flex: 1 1 100%; }
 
-  /* Tables: scroll horizontally WITHIN the card, never blow out the page.
-     The body is already overflow-x:hidden, so worst case is local scroll. */
+  /* On mobile we ditch the rankings TABLE entirely (it never fits) and show
+     a stacked card list instead. Daily table follows the old column-hide rules. */
+  .rankings-cards { display: block; }
+  .rankings-table-card { display: none; }
+
+  /* Daily table still uses the table format with hidden columns + scroll */
   .dataTables_wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;

@@ -32,7 +32,7 @@ export async function renderRankings({ dataPath, mount, kind }) {
     teamSelect.appendChild(o);
   });
 
-  // ---- Build the table
+  // ---- Build the table (desktop)
   const tbody = mount.querySelector("#rankings-tbody");
   const rowHTML = (p) => {
     const rankClass = p.rank <= 10 ? "top" : p.rank > players.length - 10 ? "bot" : "";
@@ -57,6 +57,50 @@ export async function renderRankings({ dataPath, mount, kind }) {
   };
   tbody.innerHTML = players.map(rowHTML).join("");
 
+  // ---- Build the card list (mobile — populated for all players, paginated client-side)
+  const mobileMount = mount.querySelector("#rankings-mobile");
+  const PAGE_SIZE = 25;
+  let visibleCount = PAGE_SIZE;
+
+  const cardHTML = (p) => {
+    const rankClass = p.rank <= 10 ? "top" : p.rank > players.length - 10 ? "bot" : "";
+    const dollarsCls = p.surplus_dollars >= 0 ? "pill-good" : "pill-bad";
+    return `
+      <article class="mrank-card" data-team="${p.team || ""}" data-pos="${p.position || ""}"
+               data-age="${p.age || 0}" data-salary="${p.salary || 0}" data-surplus="${p.surplus_dollars || 0}">
+        <header class="mrank-head">
+          <span class="rank-badge ${rankClass}">#${p.rank}</span>
+          <div class="mrank-name">
+            <div class="mrank-player">${p.name}</div>
+            <div class="mrank-meta">${p.team || "—"} · ${p.position || "—"} · ${fmt.int(p.age)} yrs · BPM ${fmt.num(p.bpm, 1)}</div>
+          </div>
+          <span class="pill ${dollarsCls} mrank-delta">${fmt.money(p.surplus_dollars)}</span>
+        </header>
+        <div class="mrank-grid">
+          <div><span class="mrank-k">Paid</span><span class="mrank-v">${fmt.moneyPlain(p.salary)} <span class="dim">(${fmt.pct(p.actual_cap_pct)})</span></span></div>
+          <div><span class="mrank-k">Earned</span><span class="mrank-v">${fmt.moneyPlain(p.expected_salary)} <span class="dim">(${fmt.pct(p.expected_cap_pct)})</span></span></div>
+          <div><span class="mrank-k">Surplus %</span><span class="mrank-v">${surplusPill(p.surplus_cap_pct)}</span></div>
+        </div>
+      </article>
+    `;
+  };
+
+  function renderMobile() {
+    if (!mobileMount) return;
+    const html = players.slice(0, visibleCount).map(cardHTML).join("");
+    const more = visibleCount < players.length
+      ? `<button class="mrank-more" type="button">Show more (${players.length - visibleCount} left)</button>`
+      : "";
+    mobileMount.innerHTML = html + more;
+    const btn = mobileMount.querySelector(".mrank-more");
+    if (btn) btn.addEventListener("click", () => {
+      visibleCount = Math.min(visibleCount + PAGE_SIZE * 2, players.length);
+      renderMobile();
+      applyMobileFilters();
+    });
+  }
+  renderMobile();
+
   // ---- Histogram of surplus dollars
   const surplusValues = players.map(p => p.surplus_dollars || 0);
   drawHistogram(mount.querySelector("#hist-canvas"), surplusValues);
@@ -78,28 +122,47 @@ export async function renderRankings({ dataPath, mount, kind }) {
   });
 
   // ---- Custom filters (team, pos, age, salary, surplus polarity)
-  const $rows = $("#rankings-table tbody tr");
-  function applyFilters() {
-    const team = mount.querySelector("#filter-team").value;
-    const pos = mount.querySelector("#filter-pos").value;
-    const ageMax = parseInt(mount.querySelector("#filter-age").value || "99", 10);
-    const salaryMax = parseFloat(mount.querySelector("#filter-salary").value || "999") * 1_000_000;
-    const polarity = mount.querySelector("#filter-polarity").value;
+  function readFilters() {
+    return {
+      team: mount.querySelector("#filter-team").value,
+      pos: mount.querySelector("#filter-pos").value,
+      ageMax: parseInt(mount.querySelector("#filter-age").value || "99", 10),
+      salaryMax: parseFloat(mount.querySelector("#filter-salary").value || "999") * 1_000_000,
+      polarity: mount.querySelector("#filter-polarity").value,
+    };
+  }
 
+  function matches(f, t, p, a, s, sur) {
+    if (f.team && t !== f.team) return false;
+    if (f.pos && !p.includes(f.pos)) return false;
+    if (a > f.ageMax) return false;
+    if (s > f.salaryMax) return false;
+    if (f.polarity === "pos" && sur < 0) return false;
+    if (f.polarity === "neg" && sur >= 0) return false;
+    return true;
+  }
+
+  function applyMobileFilters() {
+    const f = readFilters();
+    mobileMount?.querySelectorAll(".mrank-card").forEach(card => {
+      const ok = matches(f,
+        card.dataset.team, card.dataset.pos, +card.dataset.age,
+        +card.dataset.salary, +card.dataset.surplus);
+      card.style.display = ok ? "" : "none";
+    });
+  }
+
+  function applyFilters() {
+    const f = readFilters();
     $.fn.dataTable.ext.search.length = 0;
     $.fn.dataTable.ext.search.push((settings, _data, idx) => {
       const row = settings.aoData[idx].nTr;
-      const t = row.dataset.team, p = row.dataset.pos;
-      const a = +row.dataset.age, s = +row.dataset.salary, sur = +row.dataset.surplus;
-      if (team && t !== team) return false;
-      if (pos && !p.includes(pos)) return false;
-      if (a > ageMax) return false;
-      if (s > salaryMax) return false;
-      if (polarity === "pos" && sur < 0) return false;
-      if (polarity === "neg" && sur >= 0) return false;
-      return true;
+      return matches(f,
+        row.dataset.team, row.dataset.pos, +row.dataset.age,
+        +row.dataset.salary, +row.dataset.surplus);
     });
     dt.draw();
+    applyMobileFilters();
   }
   ["filter-team", "filter-pos", "filter-age", "filter-salary", "filter-polarity"]
     .forEach(id => mount.querySelector("#" + id).addEventListener("input", applyFilters));
