@@ -175,7 +175,10 @@
       <button id="filter-reset" class="ghost">Reset</button>
     </div>
 
-    <section class="card" data-aos style="padding: 6px 14px;">
+    <!-- Mobile card view (hidden on desktop via CSS) -->
+    <div id="daily-mobile" class="rankings-cards" data-aos></div>
+
+    <section class="card rankings-table-card" data-aos style="padding: 6px 14px;">
       <table id="daily-table" class="dt">
         <thead>
           <tr>
@@ -321,10 +324,60 @@
       };
       tbody.innerHTML = players.map(rowHTML).join("");
 
+      // Mobile card view — same data, vertical card per player
+      const mobileMount = document.getElementById("daily-mobile");
+      const PAGE_SIZE = 25;
+      let visibleCount = PAGE_SIZE;
+      const cardHTML = (p) => {
+        const rankClass = p.rank <= 5 ? "top" : p.rank > players.length - 5 ? "bot" : "";
+        const dollarsCls = p.surplus_dollars >= 0 ? "pill-good" : "pill-bad";
+        const pm = p.plus_minus == null ? "—" : (p.plus_minus > 0 ? "+" + p.plus_minus : p.plus_minus);
+        return `
+          <article class="mrank-card" data-team="${p.team}" data-minutes="${p.minutes}" data-surplus="${p.surplus_dollars}">
+            <header class="mrank-head">
+              <span class="rank-badge ${rankClass}">#${p.rank}</span>
+              <div class="mrank-name">
+                <div class="mrank-player">${p.name}</div>
+                <div class="mrank-meta">${p.team} vs ${p.opp} · ${fmt.num(p.minutes, 0)} min · ${pm}</div>
+              </div>
+              <span class="pill ${dollarsCls} mrank-delta">${fmt.money(p.surplus_dollars)}</span>
+            </header>
+            <div class="mrank-grid">
+              <div><span class="mrank-k">Stat line</span><span class="mrank-v">${fmt.int(p.pts)}p · ${fmt.int(p.ast)}a · ${fmt.int(p.trb)}r · ${fmt.int(p.stl)}s · ${fmt.int(p.blk)}b</span></div>
+              <div><span class="mrank-k">GmSc</span><span class="mrank-v">${fmt.num(p.gmsc, 1)}</span></div>
+              <div><span class="mrank-k">Earned vs Paid</span><span class="mrank-v">${fmt.moneyPlain(p.value_dollars)} <span class="dim">vs ${fmt.moneyPlain(p.per_game_salary)}</span></span></div>
+            </div>
+          </article>`;
+      };
+      function renderDailyMobile() {
+        const html = players.slice(0, visibleCount).map(cardHTML).join("");
+        const more = visibleCount < players.length
+          ? `<button class="mrank-more" type="button">Show more (${players.length - visibleCount} left)</button>`
+          : "";
+        mobileMount.innerHTML = html + more;
+        const btn = mobileMount.querySelector(".mrank-more");
+        if (btn) btn.onclick = () => { visibleCount += PAGE_SIZE * 2; renderDailyMobile(); applyMobileFilters(); };
+        applyMobileFilters();
+      }
+
       dt = $("#daily-table").DataTable({
         paging: true, pageLength: 25, lengthMenu: [10, 25, 50, 100],
         order: [], dom: '<"top"lf>rt<"bottom"ip>',
       });
+
+      function applyMobileFilters() {
+        const team = document.getElementById("filter-team").value;
+        const minMin = parseFloat(document.getElementById("filter-min").value || "0");
+        const pol = document.getElementById("filter-polarity").value;
+        mobileMount.querySelectorAll(".mrank-card").forEach(card => {
+          if (team && card.dataset.team !== team) { card.style.display = "none"; return; }
+          if (+card.dataset.minutes < minMin) { card.style.display = "none"; return; }
+          const s = +card.dataset.surplus;
+          if (pol === "pos" && s < 0) { card.style.display = "none"; return; }
+          if (pol === "neg" && s >= 0) { card.style.display = "none"; return; }
+          card.style.display = "";
+        });
+      }
 
       function applyFilters() {
         const team = document.getElementById("filter-team").value;
@@ -341,7 +394,10 @@
           return true;
         });
         dt.draw();
+        applyMobileFilters();
       }
+
+      renderDailyMobile();
       // Rebind filter inputs (cloned for clean state)
       ["filter-team", "filter-min", "filter-polarity"].forEach(id => {
         const el = document.getElementById(id);
