@@ -21,6 +21,10 @@
 
 html, body {
   margin: 0;
+  /* Hard-stop any horizontal page scroll. Wide elements (tables) get their own
+     overflow:auto containers; nothing should ever push the viewport wider. */
+  overflow-x: hidden;
+  max-width: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -384,24 +388,36 @@ footer {
 
 /* ---------- Mobile (≤720px) ---------- */
 @media (max-width: 720px) {
-  .container { padding: 0 14px; }
+  .container { padding: 0 16px; }
 
-  /* Nav: hide brand wordmark, scrollable pill row */
-  .nav-inner { padding: 10px 12px; gap: 8px; }
-  .nav-brand span:not(.logo) {
-    font-size: 14px; max-width: 100px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* Nav: stack into 2 rows — brand on top, 5 equal-width nav buttons below.
+     All 5 pages visible without horizontal scrolling. */
+  .nav-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 16px 10px;
   }
+  .nav-brand { font-size: 14px; }
+  .nav-brand .logo { width: 26px; height: 26px; border-radius: 7px; font-size: 14px; }
   .nav-links {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin: -4px -8px -4px 0;
-    padding: 4px 8px 4px 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
   }
-  .nav-links::-webkit-scrollbar { display: none; }
-  .nav-link { padding: 6px 10px; font-size: 13px; white-space: nowrap; }
+  .nav-link {
+    padding: 6px 4px;
+    font-size: 11px;
+    border-radius: 7px;
+    text-align: center;
+    line-height: 1.15;
+    white-space: normal;   /* allow 2-word labels to wrap onto a second line */
+    min-height: 30px;
+    display: flex; align-items: center; justify-content: center;
+  }
 
   /* Hero: tighter padding, smaller type */
   .hero { padding: 36px 0 20px; }
@@ -410,10 +426,12 @@ footer {
   .eyebrow { font-size: 11px; padding: 5px 8px; margin-bottom: 12px; }
 
   /* Cards & numbers */
-  .card { padding: 16px; border-radius: 13px; }
-  .card .num { font-size: 24px; }
-  .grid { gap: 12px; }
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }  /* 2x2 instead of 1x4 stack */
+  .card { padding: 14px; border-radius: 12px; min-width: 0; }
+  .card .num { font-size: 22px; overflow-wrap: anywhere; word-break: break-word; line-height: 1.15; }
+  .card .label, .card .tiny, .card p { overflow-wrap: anywhere; word-break: break-word; }
+  .grid { gap: 10px; }
+  .grid > * { min-width: 0; }                          /* let cards shrink past content */
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }   /* 2x2 instead of 1x4 stack */
   .grid-3 { grid-template-columns: 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
 
@@ -439,14 +457,23 @@ footer {
   .filters label { font-size: 10px; }
   .filters button { width: 100%; flex: 1 1 100%; }
 
-  /* Tables: horizontal scroll wrapper, smaller padding */
+  /* Tables: scroll horizontally WITHIN the card, never blow out the page.
+     The body is already overflow-x:hidden, so worst case is local scroll. */
   .dataTables_wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
-  table.dt { font-size: 12px; }
-  table.dt thead th, table.dt tbody td { padding: 8px 6px; }
-  td.player { font-weight: 600; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+  table.dt { font-size: 11px; }
+  table.dt thead th, table.dt tbody td { padding: 6px 4px; }
+  table.dt thead th { font-size: 10px; letter-spacing: 0.06em; }
+  td.player {
+    font-weight: 600;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* Hide low-priority columns on mobile rankings tables.
      Keeps: Rank, Player, BPM, Salary, Surplus %, $Δ.

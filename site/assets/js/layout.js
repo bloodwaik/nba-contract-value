@@ -1,9 +1,10 @@
 // Shared layout: nav rendering, active page highlight, scroll animations,
 // shared formatters used by every page.
 
+// Mobile-friendly labels (mobile CSS allows wrapping to 2 lines, so 2-word labels are fine)
 const PAGES = [
   { href: "index.html", label: "Overview" },
-  { href: "regular-season.html", label: "Regular Season" },
+  { href: "regular-season.html", label: "Reg Season" },
   { href: "playoffs.html", label: "Playoffs" },
   { href: "daily.html", label: "Daily" },
   { href: "algorithm.html", label: "Algorithm" },
