@@ -1,0 +1,45 @@
+name: Daily data refresh
+
+# Fetches a fresh slate from Basketball Reference once a day, commits the
+# updated JSON back to main. The push triggers deploy.yml.
+on:
+  schedule:
+    # 13:00 UTC = 9am ET, well after the last overnight NBA game
+    - cron: "0 13 * * *"
+  workflow_dispatch:  # also runnable manually from the Actions tab
+
+permissions:
+  contents: write     # needs write to push the data commit
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build site data
+        # BBR rate-limits aggressively; the script has 6s base delay + exponential
+        # backoff on 429 so a single run takes ~5-12 min depending on history depth.
+        run: python build_site_data.py
+        timeout-minutes: 30
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data/
+          if git diff --staged --quiet; then
+            echo "No data changes today."
+          else
+            git commit -m "chore: daily data refresh"
+            git push
+          fi

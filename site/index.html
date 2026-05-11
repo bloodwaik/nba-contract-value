@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cap Value Lab — NBA Contract Surplus Value</title>
+  <meta name="description" content="Which NBA players give their teams the most surplus value? A live regression model trained on production vs. salary." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div class="nav-mount"></div>
+
+  <header class="hero container">
+    <div data-aos>
+      <span class="eyebrow">2025–26 NBA · Live data</span>
+      <h1>Which contracts give teams a <span class="grad">cap-space superpower</span>?</h1>
+      <p class="lead">
+        Imagine you sign a rookie to a $13M deal and he plays like a $36M superstar.
+        Your team just got $23M of free cap space to spend on the rest of the roster.
+        That's <strong>surplus value</strong> — the gap between what a player produces and what their contract costs.
+        This site finds the league's biggest bargains and biggest overpays.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- The "Wemby explainer" — concrete example so the concept lands in one read -->
+    <section class="card" data-aos id="explainer" style="background: linear-gradient(135deg, rgba(110, 231, 255, 0.06), rgba(167, 139, 250, 0.06)); border-color: rgba(110, 231, 255, 0.25);">
+      <span class="eyebrow">How to read this site</span>
+      <div class="grid grid-3" style="margin-top: 14px; gap: 14px;">
+        <div>
+          <div class="label">1 · We learn the market</div>
+          <p class="muted" style="margin: 6px 0 0;">A regression looks at every player's stats and what their contract costs, and learns what <em>one unit of production</em> is worth on the open market.</p>
+        </div>
+        <div>
+          <div class="label">2 · We price every player</div>
+          <p class="muted" style="margin: 6px 0 0;">For each player we get an <strong>"earned" cap %</strong> — what the model says the open market would pay them today.</p>
+        </div>
+        <div>
+          <div class="label">3 · We subtract</div>
+          <p class="muted" style="margin: 6px 0 0;"><strong>Surplus = Earned − Paid.</strong> Positive means the team gets a bargain. Negative means the contract is upside-down.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-4" data-aos style="margin-top: 22px;">
+      <div class="card hover">
+        <div class="label">Players ranked</div>
+        <div class="num" id="stat-players">—</div>
+        <div class="tiny">Regular season · ≥500 minutes</div>
+      </div>
+      <div class="card hover">
+        <div class="label">Salary cap</div>
+        <div class="num" id="stat-cap">—</div>
+        <div class="tiny">2025-26 league-wide spending limit</div>
+      </div>
+      <div class="card hover">
+        <div class="label">Model accuracy</div>
+        <div class="num" id="stat-r2">—</div>
+        <div class="tiny">R² · share of contract-value variance explained</div>
+      </div>
+      <div class="card hover">
+        <div class="label">Latest playoff slate</div>
+        <div class="num" id="stat-date" style="font-size: 22px; line-height: 1.3;">—</div>
+        <div class="tiny">Most recent date with games</div>
+      </div>
+    </section>
+
+    <!-- 2x2 spotlight: RS best/worst + Playoff best/worst, clearly labeled. -->
+    <div class="section-head" data-aos>
+      <h2>Headlines</h2>
+      <span class="sub">The biggest bargains and overpays this season</span>
+    </div>
+
+    <div data-aos>
+      <div style="display:flex; align-items:center; gap: 10px; margin: 10px 0 12px;">
+        <span class="eyebrow" style="margin:0;">Regular season</span>
+        <span class="tiny">All 82 games · what value did they deliver for their salary?</span>
+      </div>
+      <section class="spotlight">
+        <div class="card good" id="rs-best">
+          <span class="eyebrow">Biggest bargain (regular season)</span>
+          <div class="name">—</div>
+          <div class="meta">—</div>
+          <div class="delta good">—</div>
+          <div class="detail tiny" style="margin-top:10px;"></div>
+          <div class="story tiny" style="margin-top:10px;"></div>
+        </div>
+        <div class="card bad" id="rs-worst">
+          <span class="eyebrow" style="color: var(--bad); background: var(--bad-soft); border-color: rgba(248,113,113,0.3);">Worst overpay (regular season)</span>
+          <div class="name">—</div>
+          <div class="meta">—</div>
+          <div class="delta bad">—</div>
+          <div class="detail tiny" style="margin-top:10px;"></div>
+          <div class="story tiny" style="margin-top:10px;"></div>
+        </div>
+      </section>
+    </div>
+
+    <div data-aos style="margin-top: 22px;">
+      <div style="display:flex; align-items:center; gap: 10px; margin: 10px 0 12px;">
+        <span class="eyebrow" style="margin:0;">Playoffs only</span>
+        <span class="tiny">If their playoff form represented their true level, what would the market pay?</span>
+      </div>
+      <section class="spotlight">
+        <div class="card good" id="po-best">
+          <span class="eyebrow">Biggest bargain (playoffs)</span>
+          <div class="name">—</div>
+          <div class="meta">—</div>
+          <div class="delta good">—</div>
+          <div class="detail tiny" style="margin-top:10px;"></div>
+          <div class="story tiny" style="margin-top:10px;"></div>
+        </div>
+        <div class="card bad" id="po-worst">
+          <span class="eyebrow" style="color: var(--bad); background: var(--bad-soft); border-color: rgba(248,113,113,0.3);">Worst overpay (playoffs)</span>
+          <div class="name">—</div>
+          <div class="meta">—</div>
+          <div class="delta bad">—</div>
+          <div class="detail tiny" style="margin-top:10px;"></div>
+          <div class="story tiny" style="margin-top:10px;"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Quick definitions so terms aren't a wall later -->
+    <div class="section-head" data-aos>
+      <h2>Cheat sheet</h2>
+      <span class="sub">Plain-English definitions of the stats we use</span>
+    </div>
+    <section class="grid grid-3" data-aos>
+      <div class="card">
+        <div class="label">Salary as % of cap</div>
+        <p class="muted" style="margin: 6px 0 0;">A player's salary divided by the league cap. Lets us compare a $30M deal today vs. a $30M deal in 2019 fairly.</p>
+      </div>
+      <div class="card">
+        <div class="label">BPM (Box Plus/Minus)</div>
+        <p class="muted" style="margin: 6px 0 0;">A single number for impact. Above 0 = better than league-average. +5 is All-Star, +8 is MVP tier.</p>
+      </div>
+      <div class="card">
+        <div class="label">Game Score (GmSc)</div>
+        <p class="muted" style="margin: 6px 0 0;">A box-score number for a single game. ~10 is a starter's night, 25+ is a star performance.</p>
+      </div>
+      <div class="card">
+        <div class="label">TS% (True Shooting)</div>
+        <p class="muted" style="margin: 6px 0 0;">One number that combines 2s, 3s, and free throws. League average is ~58%. 60%+ is elite.</p>
+      </div>
+      <div class="card">
+        <div class="label">USG% (Usage Rate)</div>
+        <p class="muted" style="margin: 6px 0 0;">Share of team possessions the player consumes while on the floor. 30%+ = primary star, 15% = role player.</p>
+      </div>
+      <div class="card">
+        <div class="label">"Earned" vs "Paid"</div>
+        <p class="muted" style="margin: 6px 0 0;"><strong>Paid</strong> = actual cap hit. <strong>Earned</strong> = what the model says the market would pay them. Surplus is the gap.</p>
+      </div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Explore</h2>
+      <span class="sub">Pick a view</span>
+    </div>
+    <section class="grid grid-2" data-aos>
+      <a class="card hover" href="regular-season.html">
+        <div class="label">Page · 01</div>
+        <h3 style="font-size: 22px; margin-top: 6px;">Regular Season Rankings</h3>
+        <p class="muted" style="margin: 6px 0 0;">Full league sorted by surplus. Filter by team, position, age, salary. Surplus distribution histogram + top/bottom highlights.</p>
+      </a>
+      <a class="card hover" href="playoffs.html">
+        <div class="label">Page · 02</div>
+        <h3 style="font-size: 22px; margin-top: 6px;">Playoff-Only Rankings</h3>
+        <p class="muted" style="margin: 6px 0 0;">Same model, applied to <em>just</em> playoff stats. Who's living up to their contract once the bright lights are on? Who's disappeared?</p>
+      </a>
+      <a class="card hover" href="daily.html">
+        <div class="label">Page · 03</div>
+        <h3 style="font-size: 22px; margin-top: 6px;">Daily — Last Night's Value</h3>
+        <p class="muted" style="margin: 6px 0 0;">Every player who suited up, with a calendar to browse other dates. Did their Game Score earn their pro-rated paycheck for that single night?</p>
+      </a>
+      <a class="card hover" href="algorithm.html">
+        <div class="label">Page · 04</div>
+        <h3 style="font-size: 22px; margin-top: 6px;">How the Algorithm Works</h3>
+        <p class="muted" style="margin: 6px 0 0;">The five-step recipe, the feature list, learned market coefficients, and the limits of the model. No black boxes.</p>
+      </a>
+    </section>
+  </main>
+
+  <div class="footer-mount"></div>
+
+  <script type="module">
+    import { renderShell, fmt, loadJSON } from "./assets/js/layout.js";
+    renderShell({ active: "index.html" });
+
+    // Plain-English story sentence for any spotlight player
+    function story(p, paidLabel) {
+      const earned = (p.expected_cap_pct * 100).toFixed(1);
+      const paid = (p.actual_cap_pct * 100).toFixed(1);
+      const dollars = Math.abs(p.surplus_dollars / 1_000_000).toFixed(1);
+      if (p.surplus_dollars >= 0) {
+        return `Plays like a player earning <strong>${earned}%</strong> of the cap. Actually paid <strong>${paid}%</strong>. The team effectively gets <strong>$${dollars}M of bonus cap space</strong> to spend elsewhere.`;
+      }
+      return `Plays like a player earning <strong>${earned}%</strong> of the cap. Actually paid <strong>${paid}%</strong>. The contract eats up <strong>$${dollars}M more</strong> of cap room than the on-court value justifies.`;
+    }
+
+    function fillCard(id, p, tone) {
+      const card = document.getElementById(id);
+      card.querySelector(".name").textContent = p.name;
+      card.querySelector(".meta").textContent =
+        `${p.team || "—"} · ${p.position} · ${p.age} yrs · BPM ${fmt.num(p.bpm)}`;
+      const d = card.querySelector(".delta");
+      d.textContent = fmt.money(p.surplus_dollars);
+      d.className = `delta ${tone}`;
+      card.querySelector(".detail").innerHTML =
+        `Paid <strong>${fmt.pct(p.actual_cap_pct)}</strong> of cap · Earned <strong>${fmt.pct(p.expected_cap_pct)}</strong> · Salary ${fmt.moneyPlain(p.salary)}`;
+      card.querySelector(".story").innerHTML = story(p);
+    }
+
+    (async () => {
+      const [meta, rs, po] = await Promise.all([
+        loadJSON("data/meta.json"),
+        loadJSON("data/regular_season.json"),
+        loadJSON("data/playoffs.json"),
+      ]);
+
+      document.getElementById("stat-players").textContent = rs.players.length;
+      document.getElementById("stat-cap").textContent = fmt.moneyPlain(meta.cap);
+      document.getElementById("stat-r2").textContent = rs.meta.model_r2.toFixed(3);
+      document.getElementById("stat-date").textContent = meta.daily_date || "—";
+
+      fillCard("rs-best",  rs.players[0], "good");
+      fillCard("rs-worst", rs.players[rs.players.length - 1], "bad");
+      fillCard("po-best",  po.players[0], "good");
+      fillCard("po-worst", po.players[po.players.length - 1], "bad");
+    })();
+  </script>
+</body>
+</html>

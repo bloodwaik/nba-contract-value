@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daily · Cap Value Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+  <style>
+    table.dataTable tbody td.dt-empty { color: var(--text-faint); }
+    table#daily-table { width: 100% !important; }
+
+    /* Calendar container */
+    .calendar-card .flatpickr-calendar.inline {
+      background: transparent; box-shadow: none; width: 100%;
+      max-width: 360px; margin: 0 auto;
+    }
+    .flatpickr-calendar.inline .flatpickr-months,
+    .flatpickr-calendar.inline .flatpickr-innerContainer,
+    .flatpickr-calendar.inline .flatpickr-rContainer,
+    .flatpickr-calendar.inline .flatpickr-days,
+    .flatpickr-calendar.inline .dayContainer { background: transparent; }
+    .flatpickr-calendar.inline .flatpickr-month,
+    .flatpickr-calendar.inline .flatpickr-weekdays,
+    .flatpickr-calendar.inline span.flatpickr-weekday,
+    .flatpickr-calendar.inline .flatpickr-current-month,
+    .flatpickr-calendar.inline .flatpickr-current-month input.cur-year,
+    .flatpickr-calendar.inline .flatpickr-monthDropdown-months {
+      color: var(--text);
+      background: transparent;
+    }
+    .flatpickr-calendar.inline .flatpickr-weekdays { border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 6px; }
+    .flatpickr-calendar.inline span.flatpickr-weekday { color: var(--text-faint); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .flatpickr-calendar.inline .flatpickr-day {
+      color: var(--text-faint);
+      border-radius: 8px;
+      max-width: 40px; height: 40px; line-height: 38px;
+      font-size: 13px; font-weight: 500;
+      transition: background 0.15s ease;
+    }
+    .flatpickr-calendar.inline .flatpickr-day.flatpickr-disabled,
+    .flatpickr-calendar.inline .flatpickr-day.prevMonthDay,
+    .flatpickr-calendar.inline .flatpickr-day.nextMonthDay {
+      color: rgba(255,255,255,0.12);
+    }
+    .flatpickr-calendar.inline .flatpickr-day.has-games {
+      color: var(--text);
+      background: rgba(110, 231, 255, 0.07);
+      border: 1px solid rgba(110, 231, 255, 0.18);
+    }
+    .flatpickr-calendar.inline .flatpickr-day.has-games:hover {
+      background: rgba(110, 231, 255, 0.18);
+      border-color: rgba(110, 231, 255, 0.4);
+    }
+    .flatpickr-calendar.inline .flatpickr-day.selected,
+    .flatpickr-calendar.inline .flatpickr-day.selected:hover {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b0e16; border: none; font-weight: 700;
+    }
+    .flatpickr-calendar.inline .flatpickr-day.today:not(.selected) {
+      border-color: var(--accent);
+    }
+    .flatpickr-calendar.inline .flatpickr-prev-month svg,
+    .flatpickr-calendar.inline .flatpickr-next-month svg { fill: var(--text-dim); }
+    .flatpickr-calendar.inline .flatpickr-prev-month:hover svg,
+    .flatpickr-calendar.inline .flatpickr-next-month:hover svg { fill: var(--accent); }
+
+    /* Recent strip */
+    .recent-strip { display: flex; gap: 8px; flex-wrap: wrap; }
+    .recent-pill {
+      cursor: pointer; user-select: none;
+      padding: 10px 14px; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+      transition: all 0.15s ease;
+      min-width: 96px;
+    }
+    .recent-pill:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+    .recent-pill.active {
+      background: linear-gradient(135deg, rgba(110, 231, 255, 0.18), rgba(167, 139, 250, 0.18));
+      border-color: var(--accent);
+    }
+    .recent-pill .date { font-weight: 700; font-size: 14px; }
+    .recent-pill .meta { font-size: 11px; color: var(--text-faint); }
+
+    .calendar-layout { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 18px; }
+    @media (max-width: 860px) { .calendar-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="nav-mount"></div>
+
+  <header class="hero container" style="padding: 60px 0 32px;">
+    <div data-aos>
+      <span class="eyebrow" id="eyebrow-date">—</span>
+      <h1>Did the night's stats <span class="grad">earn the paycheck</span>?</h1>
+      <p class="lead">Pick a date below. Each player's Game Score is converted to dollar value using a per-night calibration. Compare that to <em>actual salary ÷ 82</em> — what the player earned that night against the cap. The delta is single-game surplus.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="callout" data-aos>
+      <span class="badge">i</span>
+      <p>
+        Every player earns the same paycheck every night (their annual salary divided by 82). But their on-court value swings game to game. We turn each night's <strong>Game Score</strong> into a dollar value using the night's own median as the benchmark, then compare to what the player was paid for that one game. The gap is <strong>single-game surplus</strong> — who earned their keep, who didn't.
+      </p>
+    </section>
+
+    <section class="calendar-layout" data-aos>
+      <div class="card calendar-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px;">
+          <span class="label">Browse by date</span>
+          <span class="tiny" id="cal-count">—</span>
+        </div>
+        <div id="calendar"></div>
+        <div class="tiny" style="margin-top: 10px; text-align:center;">
+          Highlighted dates have box scores in the dataset.
+        </div>
+      </div>
+      <div>
+        <div style="margin-bottom: 12px;">
+          <span class="label">Recent</span>
+        </div>
+        <div class="recent-strip" id="recent-strip"></div>
+
+        <div class="grid grid-4" style="margin-top: 22px;">
+          <div class="card"><div class="label">Selected date</div><div class="num" id="m-date" style="font-size:22px;">—</div><div class="tiny">Most recent if you haven't picked</div></div>
+          <div class="card"><div class="label">Games</div><div class="num" id="m-games">—</div><div class="tiny">Boxscores parsed</div></div>
+          <div class="card"><div class="label">Players</div><div class="num" id="m-players">—</div><div class="tiny">Box-score lines</div></div>
+          <div class="card"><div class="label">$ per GmSc</div><div class="num" id="m-rate" style="font-size:22px;">—</div><div class="tiny">Calibration for this slate</div></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Games</h2><span class="sub">All slates from the selected night</span>
+    </div>
+    <section class="game-grid" id="games-grid" data-aos></section>
+
+    <div class="section-head" data-aos>
+      <h2>Best single-game value</h2><span class="sub">GmSc · $ earned · $ paid</span>
+    </div>
+    <section class="spotlight" data-aos>
+      <div class="card good" id="best-card">
+        <span class="eyebrow">Top earner of the night</span>
+        <div class="name">—</div><div class="meta">—</div>
+        <div class="delta good">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+      </div>
+      <div class="card bad" id="worst-card">
+        <span class="eyebrow" style="color: var(--bad); background: var(--bad-soft); border-color: rgba(248,113,113,0.3);">Most upside-down on the night</span>
+        <div class="name">—</div><div class="meta">—</div>
+        <div class="delta bad">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Full box · selected date</h2>
+      <span class="sub">Sortable, filterable</span>
+    </div>
+    <div class="filters" data-aos>
+      <div class="filter"><label>Team</label><select id="filter-team"><option value="">All teams</option></select></div>
+      <div class="filter"><label>Min minutes</label><input type="number" id="filter-min" placeholder="e.g. 15" min="0" max="48" /></div>
+      <div class="filter"><label>Polarity</label>
+        <select id="filter-polarity">
+          <option value="">All</option>
+          <option value="pos">Earned more than paid</option>
+          <option value="neg">Earned less than paid</option>
+        </select>
+      </div>
+      <button id="filter-reset" class="ghost">Reset</button>
+    </div>
+
+    <section class="card" data-aos style="padding: 6px 14px;">
+      <table id="daily-table" class="dt">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Player</th><th>Team</th><th class="center">vs</th>
+            <th class="right">Min</th><th class="right">Pts</th><th class="right">Ast</th>
+            <th class="right">Reb</th><th class="right">Stl</th><th class="right">Blk</th>
+            <th class="right"><span class="has-tip" data-tip="Plus-minus: team's net score with this player on the floor.">+/-</span></th>
+            <th class="right"><span class="has-tip" data-tip="Game Score (Hollinger): a single number for the night's impact. ~10 is starter-level, 25+ is a star performance.">GmSc</span></th>
+            <th class="right"><span class="has-tip" data-tip="Annual salary divided by 82 — what the player was paid for tonight's game.">Paid / game</span></th>
+            <th class="right"><span class="has-tip" data-tip="GmSc × tonight's $/GmSc rate. The model's read on what their performance was worth in dollars.">Earned</span></th>
+            <th class="right"><span class="has-tip" data-tip="Earned minus Paid. Positive = earned their paycheck and then some; negative = team paid more than they got.">$Δ</span></th>
+          </tr>
+        </thead>
+        <tbody id="daily-tbody"></tbody>
+      </table>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>How "$ earned" is computed</h2>
+    </div>
+    <section class="card" data-aos>
+      <p class="muted" style="margin-top: 0;">
+        Game Score (Hollinger's box-score impact metric) is the closest free per-game number to
+        EPM. For each slate we compute the median GmSc among players who played 20+ minutes and the
+        median per-game salary among the same group. The ratio gives us a slate-specific $/GmSc rate.
+        Multiply each player's GmSc by that rate to get "$ earned." Subtract their actual pro-rated
+        salary to get nightly surplus.
+      </p>
+      <div class="grid grid-3" style="margin-top: 14px;">
+        <div class="card" style="background: rgba(0,0,0,0.25);">
+          <div class="label">$ per Game Score point</div>
+          <div class="num" id="formula-rate">—</div>
+        </div>
+        <div class="card" style="background: rgba(0,0,0,0.25);">
+          <div class="label">Median GmSc (≥20 min)</div>
+          <div class="num" id="formula-gmsc">—</div>
+        </div>
+        <div class="card" style="background: rgba(0,0,0,0.25);">
+          <div class="label">Median pro-rated salary</div>
+          <div class="num" id="formula-salary">—</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="footer-mount"></div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+  <script type="module">
+    import { renderShell, fmt, loadJSON, dollarsPill } from "./assets/js/layout.js";
+    renderShell({ active: "daily.html" });
+
+    const $ = window.jQuery;
+    let dt = null;  // DataTables instance, reset per date
+
+    async function loadAndRender(dateStr, datesIndex) {
+      const data = await loadJSON(`data/daily/${dateStr}.json`);
+      const players = data.players;
+
+      document.getElementById("eyebrow-date").textContent = `Box scores · ${data.game_date}`;
+      document.getElementById("m-date").textContent = data.game_date;
+      document.getElementById("m-games").textContent = data.games.length;
+      document.getElementById("m-players").textContent = players.length;
+      const rateLabel = `$${Math.round(data.dollars_per_gmsc).toLocaleString()}`;
+      document.getElementById("m-rate").textContent = rateLabel;
+      document.getElementById("formula-rate").textContent = rateLabel;
+      document.getElementById("formula-gmsc").textContent = data.median_gmsc.toFixed(1);
+      document.getElementById("formula-salary").textContent = fmt.moneyPlain(data.median_per_game_salary);
+
+      // Recent strip — mark the active one
+      document.querySelectorAll(".recent-pill").forEach(el => {
+        el.classList.toggle("active", el.dataset.date === dateStr);
+      });
+
+      // Games grid
+      const grid = document.getElementById("games-grid");
+      grid.innerHTML = "";
+      const matchups = new Set();
+      data.games.forEach(g => {
+        const key = `${g.home} vs ${g.away}`;
+        if (matchups.has(key)) return;
+        matchups.add(key);
+        const div = document.createElement("div");
+        div.className = "game-pill";
+        div.innerHTML = `<span class="teams">${g.home} · ${g.away}</span><span class="meta">${g.players} players</span>`;
+        grid.appendChild(div);
+      });
+
+      // Spotlights
+      const best = players[0];
+      const worst = players[players.length - 1];
+      function fillCard(id, p, tone) {
+        const card = document.getElementById(id);
+        if (!p) return;
+        card.querySelector(".name").textContent = p.name;
+        card.querySelector(".meta").textContent =
+          `${p.team} vs ${p.opp} · ${fmt.num(p.minutes, 0)} min · ${fmt.int(p.pts)} pts / ${fmt.int(p.ast)} ast / ${fmt.int(p.trb)} reb`;
+        const d = card.querySelector(".delta");
+        d.textContent = fmt.money(p.surplus_dollars);
+        d.className = `delta ${tone}`;
+        card.querySelector(".detail").innerHTML =
+          `GmSc <strong>${fmt.num(p.gmsc, 1)}</strong> · Earned <strong>${fmt.moneyPlain(p.value_dollars)}</strong> · Paid ${fmt.moneyPlain(p.per_game_salary)}`;
+      }
+      fillCard("best-card", best, "good");
+      fillCard("worst-card", worst, "bad");
+
+      // Reset and rebuild the team filter
+      const teamSel = document.getElementById("filter-team");
+      teamSel.innerHTML = `<option value="">All teams</option>`;
+      const teams = Array.from(new Set(players.map(p => p.team))).sort();
+      teams.forEach(t => {
+        const o = document.createElement("option");
+        o.value = t; o.textContent = t;
+        teamSel.appendChild(o);
+      });
+
+      // Rebuild table — destroy old DataTable first
+      const tbody = document.getElementById("daily-tbody");
+      if (dt) { dt.destroy(); dt = null; }
+      const rowHTML = (p) => {
+        const rankClass = p.rank <= 5 ? "top" : p.rank > players.length - 5 ? "bot" : "";
+        const pm = p.plus_minus == null ? "—" : (p.plus_minus > 0 ? "+" + p.plus_minus : p.plus_minus);
+        return `
+          <tr data-team="${p.team}" data-minutes="${p.minutes}" data-surplus="${p.surplus_dollars}">
+            <td><span class="rank-badge ${rankClass}">${p.rank}</span></td>
+            <td class="player">${p.name}</td>
+            <td class="dim">${p.team}</td>
+            <td class="center dim">${p.opp}</td>
+            <td class="right">${fmt.num(p.minutes, 0)}</td>
+            <td class="right">${fmt.int(p.pts)}</td>
+            <td class="right">${fmt.int(p.ast)}</td>
+            <td class="right">${fmt.int(p.trb)}</td>
+            <td class="right">${fmt.int(p.stl)}</td>
+            <td class="right">${fmt.int(p.blk)}</td>
+            <td class="right dim">${pm}</td>
+            <td class="right">${fmt.num(p.gmsc, 1)}</td>
+            <td class="right dim">${fmt.moneyPlain(p.per_game_salary)}</td>
+            <td class="right">${fmt.moneyPlain(p.value_dollars)}</td>
+            <td class="right">${dollarsPill(p.surplus_dollars)}</td>
+          </tr>`;
+      };
+      tbody.innerHTML = players.map(rowHTML).join("");
+
+      dt = $("#daily-table").DataTable({
+        paging: true, pageLength: 25, lengthMenu: [10, 25, 50, 100],
+        order: [], dom: '<"top"lf>rt<"bottom"ip>',
+      });
+
+      function applyFilters() {
+        const team = document.getElementById("filter-team").value;
+        const minMin = parseFloat(document.getElementById("filter-min").value || "0");
+        const pol = document.getElementById("filter-polarity").value;
+        $.fn.dataTable.ext.search.length = 0;
+        $.fn.dataTable.ext.search.push((settings, _data, idx) => {
+          const row = settings.aoData[idx].nTr;
+          if (team && row.dataset.team !== team) return false;
+          if (+row.dataset.minutes < minMin) return false;
+          const s = +row.dataset.surplus;
+          if (pol === "pos" && s < 0) return false;
+          if (pol === "neg" && s >= 0) return false;
+          return true;
+        });
+        dt.draw();
+      }
+      // Rebind filter inputs (cloned for clean state)
+      ["filter-team", "filter-min", "filter-polarity"].forEach(id => {
+        const el = document.getElementById(id);
+        el.oninput = applyFilters;
+      });
+      document.getElementById("filter-reset").onclick = () => {
+        document.getElementById("filter-team").value = "";
+        document.getElementById("filter-min").value = "";
+        document.getElementById("filter-polarity").value = "";
+        applyFilters();
+      };
+    }
+
+    (async () => {
+      const index = await loadJSON("data/daily/index.json");
+      const dates = index.dates;  // [{date, games, players, top_player, top_surplus_dollars}, …]
+      const dateStrs = dates.map(d => d.date);
+      const dateMeta = Object.fromEntries(dates.map(d => [d.date, d]));
+
+      document.getElementById("cal-count").textContent =
+        `${dates.length} dates · ${dates[dates.length - 1].date} → ${dates[0].date}`;
+
+      // Build the "recent" strip — up to 7 most recent
+      const strip = document.getElementById("recent-strip");
+      dates.slice(0, 7).forEach(d => {
+        const pill = document.createElement("div");
+        pill.className = "recent-pill";
+        pill.dataset.date = d.date;
+        const m = new Date(d.date + "T00:00:00");
+        const label = m.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+        pill.innerHTML = `<span class="date">${label}</span><span class="meta">${d.games} games · ${d.players} players</span>`;
+        pill.addEventListener("click", () => {
+          fp.setDate(d.date, true);
+        });
+        strip.appendChild(pill);
+      });
+
+      // Initialise flatpickr
+      const fp = window.flatpickr("#calendar", {
+        inline: true,
+        defaultDate: index.default,
+        enable: dateStrs,
+        minDate: dateStrs[dateStrs.length - 1],
+        maxDate: dateStrs[0],
+        onDayCreate: (_dObj, _dStr, _fp, dayElem) => {
+          const d = dayElem.dateObj;
+          const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          if (dateMeta[iso]) {
+            dayElem.classList.add("has-games");
+            dayElem.setAttribute("title",
+              `${dateMeta[iso].games} games · ${dateMeta[iso].players} players · top: ${dateMeta[iso].top_player}`);
+          }
+        },
+        onChange: (selected) => {
+          if (!selected[0]) return;
+          const d = selected[0];
+          const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+          loadAndRender(iso, dateMeta).catch(console.error);
+        },
+      });
+
+      await loadAndRender(index.default, dateMeta);
+    })();
+  </script>
+</body>
+</html>

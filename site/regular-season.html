@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Regular Season · Cap Value Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css" />
+  <style>
+    table.dataTable tbody td.dt-empty { color: var(--text-faint); }
+    table#rankings-table { width: 100% !important; }
+  </style>
+</head>
+<body>
+  <div class="nav-mount"></div>
+
+  <header class="hero container" style="padding: 60px 0 32px;">
+    <div data-aos>
+      <span class="eyebrow">2025–26 NBA · Regular season only</span>
+      <h1><span class="grad">Regular-season</span> contract value</h1>
+      <p class="lead">Production through 82 games priced against the cap. Filter by team, position, age, or salary tier. Click any column header to sort.</p>
+    </div>
+  </header>
+
+  <main class="container" id="rankings-page">
+    <section class="callout" data-aos>
+      <span class="badge">i</span>
+      <p>
+        Each row shows one player. <strong>Paid %</strong> is the slice of the cap their salary occupies — that's the cost. <strong>Earned %</strong> is what the model says they'd command on the open market given their stats — that's the production. <strong>Surplus</strong> is the gap. Positive = the team got a steal; negative = the contract is upside-down. Hover any column header for a definition.
+      </p>
+    </section>
+
+    <section class="grid grid-4" data-aos>
+      <div class="card"><div class="label">Players ranked</div><div class="num" id="stat-players">—</div><div class="tiny">≥500 minutes played</div></div>
+      <div class="card"><div class="label">Model R²</div><div class="num" id="stat-r2">—</div><div class="tiny">Fraction of variance explained</div></div>
+      <div class="card"><div class="label">CV-MAE</div><div class="num" id="stat-mae">—</div><div class="tiny">5-fold cross-validated error</div></div>
+      <div class="card"><div class="label">Cap</div><div class="num" id="stat-cap">—</div><div class="tiny">2025-26 NBA salary cap</div></div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Spotlight</h2><span class="sub">Extremes of the distribution</span>
+    </div>
+    <section class="spotlight" data-aos>
+      <div class="card good" id="spotlight-best">
+        <span class="eyebrow">#1 surplus value</span>
+        <div class="name">—</div>
+        <div class="meta">—</div>
+        <div class="delta good">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+        <div class="story tiny"></div>
+      </div>
+      <div class="card bad" id="spotlight-worst">
+        <span class="eyebrow" style="color: var(--bad); background: var(--bad-soft); border-color: rgba(248,113,113,0.3);">Worst overpay</span>
+        <div class="name">—</div>
+        <div class="meta">—</div>
+        <div class="delta bad">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+        <div class="story tiny"></div>
+      </div>
+    </section>
+    <section class="card hover" id="spotlight-rich" data-aos style="margin-top: 18px;">
+      <span class="eyebrow">Best big-salary bargain</span>
+      <div class="name">—</div>
+      <div class="meta">—</div>
+      <div class="delta good">—</div>
+      <div class="detail tiny" style="margin-top:10px;"></div>
+      <div class="story tiny"></div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Surplus distribution</h2>
+      <span class="sub">Negative = overpay · Positive = bargain</span>
+    </div>
+    <section class="card" data-aos><div style="height: 220px;"><canvas id="hist-canvas"></canvas></div></section>
+
+    <div class="section-head" data-aos>
+      <h2>League rankings</h2>
+      <span class="sub">Sorted by surplus dollars</span>
+    </div>
+    <div class="filters" data-aos>
+      <div class="filter">
+        <label>Team</label>
+        <select id="filter-team"><option value="">All teams</option></select>
+      </div>
+      <div class="filter">
+        <label>Position</label>
+        <select id="filter-pos">
+          <option value="">All</option>
+          <option value="PG">PG</option>
+          <option value="SG">SG</option>
+          <option value="SF">SF</option>
+          <option value="PF">PF</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+      <div class="filter">
+        <label>Max age</label>
+        <input type="number" id="filter-age" placeholder="e.g. 26" min="18" max="45" />
+      </div>
+      <div class="filter">
+        <label>Max salary ($M)</label>
+        <input type="number" id="filter-salary" placeholder="e.g. 10" min="1" max="80" step="1" />
+      </div>
+      <div class="filter">
+        <label>Surplus</label>
+        <select id="filter-polarity">
+          <option value="">All</option>
+          <option value="pos">Positive only</option>
+          <option value="neg">Negative only</option>
+        </select>
+      </div>
+      <button id="filter-reset" class="ghost">Reset</button>
+    </div>
+
+    <section class="card" data-aos style="padding: 6px 14px;">
+      <table id="rankings-table" class="dt">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Team</th>
+            <th class="center">Pos</th>
+            <th class="right">Age</th>
+            <th class="right"><span class="has-tip" data-tip="Box Plus/Minus — a single impact score. +5 is All-Star, +8 is MVP tier.">BPM</span></th>
+            <th class="right">Min</th>
+            <th class="right">Salary</th>
+            <th class="right"><span class="has-tip" data-tip="The player's salary as a share of the league salary cap.">Paid %</span></th>
+            <th class="right"><span class="has-tip" data-tip="Annual dollar value the model says the market would pay this player given their stats.">Earned $</span></th>
+            <th class="right"><span class="has-tip" data-tip="Same value as Earned $, expressed as a share of the cap.">Earned %</span></th>
+            <th class="right"><span class="has-tip" data-tip="Earned % minus Paid %. Positive = team profit, negative = team loss.">Surplus</span></th>
+            <th class="right"><span class="has-tip" data-tip="Surplus expressed in dollars, against this year's cap.">$Δ</span></th>
+          </tr>
+        </thead>
+        <tbody id="rankings-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div class="footer-mount"></div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module">
+    import { renderShell } from "./assets/js/layout.js";
+    import { renderRankings } from "./assets/js/rankings.js";
+    renderShell({ active: "regular-season.html" });
+    renderRankings({
+      dataPath: "data/regular_season.json",
+      mount: document.getElementById("rankings-page"),
+      kind: "regular",
+    });
+  </script>
+</body>
+</html>

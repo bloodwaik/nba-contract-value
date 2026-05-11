@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Playoffs · Cap Value Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css" />
+  <style>
+    table.dataTable tbody td.dt-empty { color: var(--text-faint); }
+    table#rankings-table { width: 100% !important; }
+  </style>
+</head>
+<body>
+  <div class="nav-mount"></div>
+
+  <header class="hero container" style="padding: 60px 0 32px;">
+    <div data-aos>
+      <span class="eyebrow">2025–26 NBA · Playoff stats only</span>
+      <h1><span class="grad">Playoff-only</span> contract value</h1>
+      <p class="lead">The market-rate model is trained on the regular season — the 82-game sample is the stablest read on what the market pays. We then ask: <em>if their playoff form represented their true level, what would the market pay them?</em> Players who didn't make the playoffs aren't here.</p>
+    </div>
+  </header>
+
+  <main class="container" id="rankings-page">
+    <section class="callout" data-aos>
+      <span class="badge">i</span>
+      <p>
+        We train the model on full-season regular-season data (the most stable signal of market price) and then ask: <em>given only this player's playoff stat line, what should they earn?</em> A player who lifted their game in April-May shows positive surplus here; a star who disappeared shows negative. Only players who've logged at least 100 playoff minutes are included.
+      </p>
+    </section>
+
+    <section class="grid grid-4" data-aos>
+      <div class="card"><div class="label">Players ranked</div><div class="num" id="stat-players">—</div><div class="tiny">Playoff minutes ≥100</div></div>
+      <div class="card"><div class="label">Model R²</div><div class="num" id="stat-r2">—</div><div class="tiny">Trained on regular season</div></div>
+      <div class="card"><div class="label">CV-MAE</div><div class="num" id="stat-mae">—</div><div class="tiny">5-fold cross-validated</div></div>
+      <div class="card"><div class="label">Cap</div><div class="num" id="stat-cap">—</div><div class="tiny">2025-26 salary cap</div></div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Spotlight</h2><span class="sub">Most extreme deltas based strictly on playoff production</span>
+    </div>
+    <section class="spotlight" data-aos>
+      <div class="card good" id="spotlight-best">
+        <span class="eyebrow">#1 playoff bargain</span>
+        <div class="name">—</div><div class="meta">—</div>
+        <div class="delta good">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+        <div class="story tiny"></div>
+      </div>
+      <div class="card bad" id="spotlight-worst">
+        <span class="eyebrow" style="color: var(--bad); background: var(--bad-soft); border-color: rgba(248,113,113,0.3);">Worst playoff overpay</span>
+        <div class="name">—</div><div class="meta">—</div>
+        <div class="delta bad">—</div>
+        <div class="detail tiny" style="margin-top:10px;"></div>
+        <div class="story tiny"></div>
+      </div>
+    </section>
+    <section class="card hover" id="spotlight-rich" data-aos style="margin-top: 18px;">
+      <span class="eyebrow">Best big-salary bargain (playoffs)</span>
+      <div class="name">—</div><div class="meta">—</div>
+      <div class="delta good">—</div>
+      <div class="detail tiny" style="margin-top:10px;"></div>
+      <div class="story tiny"></div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Surplus distribution</h2>
+      <span class="sub">Negative = overpay · Positive = bargain</span>
+    </div>
+    <section class="card" data-aos><div style="height: 220px;"><canvas id="hist-canvas"></canvas></div></section>
+
+    <div class="section-head" data-aos>
+      <h2>League rankings</h2>
+      <span class="sub">Playoff stats only · regular-season-trained model</span>
+    </div>
+    <div class="filters" data-aos>
+      <div class="filter"><label>Team</label><select id="filter-team"><option value="">All teams</option></select></div>
+      <div class="filter"><label>Position</label>
+        <select id="filter-pos">
+          <option value="">All</option><option value="PG">PG</option><option value="SG">SG</option>
+          <option value="SF">SF</option><option value="PF">PF</option><option value="C">C</option>
+        </select>
+      </div>
+      <div class="filter"><label>Max age</label><input type="number" id="filter-age" placeholder="e.g. 26" /></div>
+      <div class="filter"><label>Max salary ($M)</label><input type="number" id="filter-salary" placeholder="e.g. 10" /></div>
+      <div class="filter"><label>Surplus</label>
+        <select id="filter-polarity">
+          <option value="">All</option><option value="pos">Positive only</option><option value="neg">Negative only</option>
+        </select>
+      </div>
+      <button id="filter-reset" class="ghost">Reset</button>
+    </div>
+
+    <section class="card" data-aos style="padding: 6px 14px;">
+      <table id="rankings-table" class="dt">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Player</th><th>Team</th><th class="center">Pos</th>
+            <th class="right">Age</th>
+            <th class="right"><span class="has-tip" data-tip="Playoff Box Plus/Minus — single impact number from postseason play.">BPM</span></th>
+            <th class="right"><span class="has-tip" data-tip="Total playoff minutes played.">Min</span></th>
+            <th class="right">Salary</th>
+            <th class="right"><span class="has-tip" data-tip="Annual salary as a share of the league cap.">Paid %</span></th>
+            <th class="right"><span class="has-tip" data-tip="Annual dollars the model says they'd earn if their playoff form represented their true level.">Earned $</span></th>
+            <th class="right"><span class="has-tip" data-tip="Earned $ as a share of the cap.">Earned %</span></th>
+            <th class="right"><span class="has-tip" data-tip="Earned % minus Paid %. Positive = bargain, negative = overpay.">Surplus</span></th>
+            <th class="right"><span class="has-tip" data-tip="Surplus in dollars, against this year's cap.">$Δ</span></th>
+          </tr>
+        </thead>
+        <tbody id="rankings-tbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div class="footer-mount"></div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script type="module">
+    import { renderShell } from "./assets/js/layout.js";
+    import { renderRankings } from "./assets/js/rankings.js";
+    renderShell({ active: "playoffs.html" });
+    renderRankings({
+      dataPath: "data/playoffs.json",
+      mount: document.getElementById("rankings-page"),
+      kind: "playoffs",
+    });
+  </script>
+</body>
+</html>

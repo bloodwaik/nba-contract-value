@@ -1,0 +1,11 @@
+.venv/
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.log
+
+# Local CSV exports — site reads from site/data/*.json, not these
+rankings_2024_25.csv
+rankings_2025_26.csv

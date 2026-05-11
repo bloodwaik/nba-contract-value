@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Algorithm · Cap Value Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="nav-mount"></div>
+
+  <header class="hero container">
+    <div data-aos>
+      <span class="eyebrow">How it works</span>
+      <h1>From box score to <span class="grad">surplus value</span></h1>
+      <p class="lead">The model has one job: predict what fraction of the salary cap each player would command on the open market. The gap between that and what they actually make is the contract's surplus value.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section data-aos>
+      <div class="section-head"><h2>The five-step recipe</h2><span class="sub">No black box</span></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div>
+            <h3>Normalize salaries</h3>
+            <p>Raw dollars rot — a $30M deal in 2019 is not a $30M deal in 2026. Every contract is converted to <code>cap_pct = salary / season_cap</code>, putting every era on the same scale.</p>
+            <span class="formula">cap_pct = salary ÷ season_cap</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div>
+            <h3>Build the feature stack</h3>
+            <p>Curated stats only — no PPG/RPG noise. Impact (BPM, DWS), efficiency × volume (TS%, USG%, AST%), hidden value (STL%, ORB%), availability (total minutes), demographics (age, age², position bucket). Box scores feed in, latent player value comes out.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div>
+            <h3>Fit market rate</h3>
+            <p>A Ridge regression learns the open-market exchange rate between each production unit and cap space. Ridge over OLS because BPM, DWS, VORP, TS%, USG% are correlated and we want stable coefficients. All features are standardized so the coefficients are directly comparable.</p>
+            <span class="formula">Expected_cap_pct = β₀ + β·features + ε</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div>
+            <h3>Score every player</h3>
+            <p>Run every active player through the trained model to get their <em>expected</em> cap percentage. This is the model's read on what they would command on the open market today given their production.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div>
+            <h3>Compute surplus & rank</h3>
+            <p>Subtract actual cap hit from expected and multiply by the current cap to convert to dollars. Positive = team profit; negative = the contract is upside-down on the market.</p>
+            <span class="formula">surplus_$ = (expected_cap_pct − actual_cap_pct) × season_cap</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>What the market pays</h2>
+      <span class="sub">Learned coefficients · standardized features</span>
+    </div>
+    <section class="card" data-aos>
+      <p class="muted" style="margin-top:0;">Each bar is the marginal cap-percentage the model assigns per one-standard-deviation increase in that feature, holding the others fixed. Positive bars mean the market pays more for that input; negative bars mean it discounts it.</p>
+      <div style="height: 420px;"><canvas id="coef-chart"></canvas></div>
+      <div class="tiny" style="margin-top:8px;">Note: <code>age</code> and <code>age²</code> are highly correlated by construction — Ridge spreads the curve across both. The <em>net</em> age effect is a quadratic peak in the late 20s, not what either bar shows alone.</div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Inputs used</h2>
+      <span class="sub">Why each one earns its place</span>
+    </div>
+    <section class="grid grid-2" data-aos>
+      <div class="card">
+        <h3>Impact metrics</h3>
+        <p class="muted">BPM (Box Plus/Minus) and DWS (Defensive Win Shares). BPM is the gold-standard free EPM substitute. DWS prevents the model from systematically underpaying elite defenders who don't shoot a lot.</p>
+      </div>
+      <div class="card">
+        <h3>Efficiency × volume</h3>
+        <p class="muted">TS% combines 2s, 3s, and FTs into one efficiency number. USG% says how many possessions a player consumes. AST% captures shot creation for others. The intersection of high TS% × high USG% is the most expensive thing in basketball.</p>
+      </div>
+      <div class="card">
+        <h3>Hidden value</h3>
+        <p class="muted">STL% and ORB%. Steals are weighted ~9× points in some impact frameworks. Offensive rebounds from non-centers extend possessions and quietly drive surplus.</p>
+      </div>
+      <div class="card">
+        <h3>Availability & age</h3>
+        <p class="muted">Total minutes penalize load-managed stars. Games played sanity-checks distribution. Age (and age²) lets the model trace an aging curve — peak around 27, decline after 30.</p>
+      </div>
+    </section>
+
+    <div class="section-head" data-aos>
+      <h2>Fit & honest caveats</h2>
+      <span class="sub">What the model gets right, and where it's blunt</span>
+    </div>
+    <section class="grid grid-2" data-aos>
+      <div class="card">
+        <h3>In-sample R²</h3>
+        <div class="num" id="m-r2">—</div>
+        <div class="tiny">Fraction of cap-% variance explained by the features</div>
+      </div>
+      <div class="card">
+        <h3>5-fold CV MAE</h3>
+        <div class="num" id="m-mae">—</div>
+        <div class="tiny">Average prediction error on held-out folds, in cap percentage points</div>
+      </div>
+    </section>
+    <section class="card" data-aos style="margin-top: 18px;">
+      <h3 style="margin-top:0;">Known limits</h3>
+      <ul class="muted" style="line-height: 1.7;">
+        <li><strong>Supermax ceiling.</strong> Predictions are clipped at 35% of the cap (the league's supermax). Truly elite players (Jokić, SGA, Wemby) get floored at the ceiling, which suppresses their measured surplus.</li>
+        <li><strong>Veteran-minimum floor.</strong> Predictions are clipped at 1% of the cap. Bench-end production can't "earn" less than the league min by construction.</li>
+        <li><strong>EPM substitute.</strong> EPM is paywalled at Dunks & Threes. BPM is the free stand-in. Swap any impact metric into <code>features.py</code> and the rest of the pipeline runs unchanged.</li>
+        <li><strong>Training set.</strong> This demo trains in-sample. The cleanest version trains on prior-season → cap_pct at the moment of signing, across many seasons. The pipeline supports it; you just feed a different DataFrame.</li>
+        <li><strong>Injury history.</strong> The model rewards minutes played but doesn't penalize multi-year injury history. Easy one-line extension.</li>
+      </ul>
+    </section>
+  </main>
+
+  <div class="footer-mount"></div>
+
+  <script type="module">
+    import { renderShell, loadJSON } from "./assets/js/layout.js";
+    renderShell({ active: "algorithm.html" });
+
+    (async () => {
+      const meta = await loadJSON("data/meta.json");
+      const model = meta.playoffs_model || meta.model;
+      document.getElementById("m-r2").textContent = model.model_r2.toFixed(3);
+      document.getElementById("m-mae").textContent = (model.model_cv_mae_cap_pct * 100).toFixed(2) + " cap-%";
+
+      const coefs = [...model.coefficients].sort((a, b) => b.coef_per_sd - a.coef_per_sd);
+      const labels = coefs.map(c => c.feature);
+      const values = coefs.map(c => c.coef_per_sd * 100);  // to "cap %" units
+      const colors = values.map(v => v >= 0 ? "rgba(110, 231, 255, 0.85)" : "rgba(248, 113, 113, 0.85)");
+
+      new Chart(document.getElementById("coef-chart"), {
+        type: "bar",
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderRadius: 6 }] },
+        options: {
+          indexAxis: "y",
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: { label: (ctx) => `${ctx.parsed.x.toFixed(2)} cap-% per 1 sd` }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#99a0b3", callback: v => v + "%" },
+              grid: { color: "rgba(255,255,255,0.05)" }
+            },
+            y: { ticks: { color: "#e7eaf3" }, grid: { display: false } }
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
