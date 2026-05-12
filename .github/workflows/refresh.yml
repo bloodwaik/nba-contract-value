@@ -4,9 +4,12 @@ name: Daily data refresh
 # updated JSON back to main. The push triggers deploy.yml.
 on:
   schedule:
-    # 13:00 UTC = 9am ET, well after the last overnight NBA game
-    - cron: "0 13 * * *"
-  workflow_dispatch:  # also runnable manually from the Actions tab
+    # 13:17 UTC = ~9am ET. Off-the-hour timing improves reliability —
+    # GitHub's scheduler is "best effort" and gets backed up at :00.
+    - cron: "17 13 * * *"
+    # Also try ~3hr later as a safety net in case the first one misses.
+    - cron: "23 16 * * *"
+  workflow_dispatch:  # manual trigger from the Actions tab
 
 permissions:
   contents: write     # needs write to push the data commit
