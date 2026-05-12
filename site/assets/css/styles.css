@@ -451,6 +451,72 @@ footer {
   color: var(--text);
 }
 
+/* Expand/collapse for the detail panel inside each mobile card */
+.mrank-card { cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+.mrank-card:active { background: var(--bg-card-strong); }
+.mrank-card.open { border-color: var(--border-strong); }
+
+.mrank-toggle {
+  margin-top: 10px;
+  padding: 8px 0 0;
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: none; border: none;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  color: var(--text-faint);
+  font-family: inherit; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.mrank-chevron {
+  font-size: 14px; line-height: 1;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+.mrank-card.open .mrank-chevron { transform: rotate(180deg); }
+.mrank-card.open .mrank-toggle { color: var(--accent); }
+
+.mrank-detail {
+  display: none;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+.mrank-card.open .mrank-detail { display: block; }
+
+.mrank-detail-group + .mrank-detail-group {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.04);
+}
+.mrank-detail-title {
+  font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.mrank-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px 12px;
+}
+.mrank-detail-grid > div {
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+}
+.mrank-detail-grid .mrank-k {
+  font-size: 9px; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.mrank-detail-grid .mrank-v {
+  font-size: 13px; font-weight: 500;
+  color: var(--text);
+}
+.mrank-detail-grid .mrank-v .dim {
+  color: var(--text-faint); font-size: 11px; margin-left: 2px;
+}
+
 /* ---------- Mobile (≤720px) ---------- */
 @media (max-width: 720px) {
   .container { padding: 0 16px; }

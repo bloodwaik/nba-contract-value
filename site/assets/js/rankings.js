@@ -81,6 +81,42 @@ export async function renderRankings({ dataPath, mount, kind }) {
           <div><span class="mrank-k">Earned</span><span class="mrank-v">${fmt.moneyPlain(p.expected_salary)} <span class="dim">(${fmt.pct(p.expected_cap_pct)})</span></span></div>
           <div><span class="mrank-k">Surplus %</span><span class="mrank-v">${surplusPill(p.surplus_cap_pct)}</span></div>
         </div>
+        <button class="mrank-toggle" type="button" aria-expanded="false">
+          <span class="mrank-toggle-label">Tap for the stats driving this value</span>
+          <span class="mrank-chevron">▾</span>
+        </button>
+        <div class="mrank-detail">
+          <div class="mrank-detail-group">
+            <div class="mrank-detail-title">Impact</div>
+            <div class="mrank-detail-grid">
+              <div><span class="mrank-k">BPM</span><span class="mrank-v">${fmt.num(p.bpm, 1)}</span></div>
+              <div><span class="mrank-k">DWS</span><span class="mrank-v">${fmt.num(p.dws, 1)}</span></div>
+              <div><span class="mrank-k">VORP</span><span class="mrank-v">${fmt.num(p.vorp, 1)}</span></div>
+            </div>
+          </div>
+          <div class="mrank-detail-group">
+            <div class="mrank-detail-title">Efficiency × volume</div>
+            <div class="mrank-detail-grid">
+              <div><span class="mrank-k">TS%</span><span class="mrank-v">${fmt.pct(p.ts_pct)}</span></div>
+              <div><span class="mrank-k">USG%</span><span class="mrank-v">${fmt.num(p.usg_pct, 1)}%</span></div>
+              <div><span class="mrank-k">AST%</span><span class="mrank-v">${fmt.num(p.ast_pct, 1)}%</span></div>
+            </div>
+          </div>
+          <div class="mrank-detail-group">
+            <div class="mrank-detail-title">Hidden value</div>
+            <div class="mrank-detail-grid">
+              <div><span class="mrank-k">STL%</span><span class="mrank-v">${fmt.num(p.stl_pct, 1)}%</span></div>
+              <div><span class="mrank-k">ORB%</span><span class="mrank-v">${fmt.num(p.orb_pct, 1)}%</span></div>
+            </div>
+          </div>
+          <div class="mrank-detail-group">
+            <div class="mrank-detail-title">Availability</div>
+            <div class="mrank-detail-grid">
+              <div><span class="mrank-k">Games</span><span class="mrank-v">${fmt.int(p.games_played)}</span></div>
+              <div><span class="mrank-k">Minutes</span><span class="mrank-v">${fmt.int(p.total_minutes)}</span></div>
+            </div>
+          </div>
+        </div>
       </article>
     `;
   };
@@ -100,6 +136,19 @@ export async function renderRankings({ dataPath, mount, kind }) {
     });
   }
   renderMobile();
+
+  // Card click → toggle expanded detail. Delegated on the mount so re-rendered
+  // cards keep working without re-wiring per-card listeners.
+  if (mobileMount) {
+    mobileMount.addEventListener("click", (e) => {
+      if (e.target.closest(".mrank-more")) return;  // pagination button passes through
+      const card = e.target.closest(".mrank-card");
+      if (!card) return;
+      const open = card.classList.toggle("open");
+      const toggle = card.querySelector(".mrank-toggle");
+      if (toggle) toggle.setAttribute("aria-expanded", String(open));
+    });
+  }
 
   // ---- Histogram of surplus dollars
   const surplusValues = players.map(p => p.surplus_dollars || 0);

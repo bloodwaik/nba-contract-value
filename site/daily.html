@@ -328,6 +328,7 @@
       const mobileMount = document.getElementById("daily-mobile");
       const PAGE_SIZE = 25;
       let visibleCount = PAGE_SIZE;
+      const pct = (made, att) => att > 0 ? `${Math.round(made / att * 100)}%` : "—";
       const cardHTML = (p) => {
         const rankClass = p.rank <= 5 ? "top" : p.rank > players.length - 5 ? "bot" : "";
         const dollarsCls = p.surplus_dollars >= 0 ? "pill-good" : "pill-bad";
@@ -347,6 +348,39 @@
               <div><span class="mrank-k">GmSc</span><span class="mrank-v">${fmt.num(p.gmsc, 1)}</span></div>
               <div><span class="mrank-k">Earned vs Paid</span><span class="mrank-v">${fmt.moneyPlain(p.value_dollars)} <span class="dim">vs ${fmt.moneyPlain(p.per_game_salary)}</span></span></div>
             </div>
+            <button class="mrank-toggle" type="button" aria-expanded="false">
+              <span class="mrank-toggle-label">Tap for the full box + how the value was calculated</span>
+              <span class="mrank-chevron">▾</span>
+            </button>
+            <div class="mrank-detail">
+              <div class="mrank-detail-group">
+                <div class="mrank-detail-title">Shooting</div>
+                <div class="mrank-detail-grid">
+                  <div><span class="mrank-k">FG</span><span class="mrank-v">${fmt.int(p.fg)}/${fmt.int(p.fga)} <span class="dim">${pct(p.fg, p.fga)}</span></span></div>
+                  <div><span class="mrank-k">3P</span><span class="mrank-v">${fmt.int(p.three)}/${fmt.int(p.threea)} <span class="dim">${pct(p.three, p.threea)}</span></span></div>
+                  <div><span class="mrank-k">FT</span><span class="mrank-v">${fmt.int(p.ft)}/${fmt.int(p.fta)} <span class="dim">${pct(p.ft, p.fta)}</span></span></div>
+                </div>
+              </div>
+              <div class="mrank-detail-group">
+                <div class="mrank-detail-title">Defense & extras</div>
+                <div class="mrank-detail-grid">
+                  <div><span class="mrank-k">Stl</span><span class="mrank-v">${fmt.int(p.stl)}</span></div>
+                  <div><span class="mrank-k">Blk</span><span class="mrank-v">${fmt.int(p.blk)}</span></div>
+                  <div><span class="mrank-k">TOV</span><span class="mrank-v">${fmt.int(p.tov)}</span></div>
+                </div>
+              </div>
+              <div class="mrank-detail-group">
+                <div class="mrank-detail-title">How tonight's value was calculated</div>
+                <div class="mrank-detail-grid">
+                  <div><span class="mrank-k">GmSc</span><span class="mrank-v">${fmt.num(p.gmsc, 1)}</span></div>
+                  <div><span class="mrank-k">$/GmSc rate</span><span class="mrank-v">$${Math.round(data.dollars_per_gmsc).toLocaleString()}</span></div>
+                  <div><span class="mrank-k">→ Earned</span><span class="mrank-v">${fmt.moneyPlain(p.value_dollars)}</span></div>
+                  <div><span class="mrank-k">Annual salary</span><span class="mrank-v">${fmt.moneyPlain(p.salary)}</span></div>
+                  <div><span class="mrank-k">÷ 82</span><span class="mrank-v">${fmt.moneyPlain(p.per_game_salary)}</span></div>
+                  <div><span class="mrank-k">= Surplus</span><span class="mrank-v">${fmt.money(p.surplus_dollars)}</span></div>
+                </div>
+              </div>
+            </div>
           </article>`;
       };
       function renderDailyMobile() {
@@ -359,6 +393,17 @@
         if (btn) btn.onclick = () => { visibleCount += PAGE_SIZE * 2; renderDailyMobile(); applyMobileFilters(); };
         applyMobileFilters();
       }
+
+      // Delegated card-expand handler. Rebound on each re-render via reset
+      // of innerHTML, but the parent mobileMount keeps the listener alive.
+      mobileMount.onclick = (e) => {
+        if (e.target.closest(".mrank-more")) return;
+        const card = e.target.closest(".mrank-card");
+        if (!card) return;
+        const open = card.classList.toggle("open");
+        const toggle = card.querySelector(".mrank-toggle");
+        if (toggle) toggle.setAttribute("aria-expanded", String(open));
+      };
 
       dt = $("#daily-table").DataTable({
         paging: true, pageLength: 25, lengthMenu: [10, 25, 50, 100],
